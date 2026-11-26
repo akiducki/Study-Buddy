@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy — Voice Tutor, Academic 3D Heart &amp; Solar System</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="relative w-screen h-screen overflow-hidden">
+
+  <!-- Studio Gradient Layer -->
+  <div id="bg-layer" class="fixed inset-0 z-0 bg-buddy-studio transition-colors duration-500"></div>
+
+  <!-- Fullscreen 3D Canvas (Academic Heart & Solar System) -->
+  <canvas id="scene-canvas" class="fixed inset-0 z-0 w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+  <!-- 3D Academic Heart Leader-Line Labels Layer -->
+  <div id="heart-labels-layer" class="fixed inset-0 z-10 pointer-events-none hidden">
+    <svg id="heart-leaders-svg" class="absolute inset-0 w-full h-full pointer-events-none"></svg>
+    <div id="heart-pins-container" class="absolute inset-0 pointer-events-none"></div>
+  </div>
+
+  <!-- Animated Study Buddy Character Stage -->
+  <div id="buddy-stage" class="buddy-stage fixed inset-0 z-10 flex items-center justify-center pointer-events-none pb-24">
+    <div id="buddy-card" class="buddy-card">
+      <div id="buddy-speaking-glow" class="buddy-speaking-glow"></div>
+      <img id="buddy-portrait" src="assets/study-buddy.jpg" alt="Study Buddy" class="w-full h-full object-contain select-none pointer-events-none" />
+
+      <!-- Single Pair of Animated Cursor-Tracking Pupils Inside Goggles -->
+      <div class="buddy-goggle-eye" style="left: 44.33%; top: 29.09%;">
+        <div id="buddy-eye-left" class="buddy-oval-pupil">
+          <div class="buddy-oval-glint"></div>
+        </div>
+      </div>
+      <div class="buddy-goggle-eye" style="left: 56.42%; top: 28.97%;">
+        <div id="buddy-eye-right" class="buddy-oval-pupil">
+          <div class="buddy-oval-glint"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Toolbar -->
+  <header class="fixed top-4 left-4 right-4 z-30 flex items-center justify-between gap-2 pointer-events-none">
+    <div class="pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 rounded-full glass shrink-0">
+      <span class="w-2.5 h-2.5 rounded-full bg-[#d0f601]"></span>
+      <span class="text-xs sm:text-sm font-bold tracking-tight text-[#f5f1c6]">STUDY BUDDY</span>
+    </div>
+
+    <nav class="glass rounded-full p-1 flex items-center gap-1 pointer-events-auto overflow-x-auto max-w-full" aria-label="Study Topics">
+      <button id="nav-buddy" data-mode="buddy" class="nav-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all bg-[#d0f601] text-[#002e62] shadow whitespace-nowrap">Study Buddy</button>
+      <button id="nav-biology" data-mode="biology" class="nav-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all text-[#f5f1c6]/85 hover:text-white hover:bg-white/10 whitespace-nowrap">Biology · Heart</button>
+      <button id="nav-solar" data-mode="solar" class="nav-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all text-[#f5f1c6]/85 hover:text-white hover:bg-white/10 whitespace-nowrap">Solar System</button>
+    </nav>
+
+    <div class="pointer-events-auto flex items-center gap-1.5 shrink-0">
+      <button id="gesture-toggle-btn" title="Toggle Webcam Hand Gestures" class="glass px-3 py-1.5 rounded-full text-xs font-semibold text-[#f5f1c6] hover:bg-white/15 transition flex items-center gap-1.5">
+        <i data-lucide="hand" class="w-3.5 h-3.5"></i>
+        <span class="hidden md:inline">Hand Gestures</span>
+      </button>
+      <button id="voice-mute-btn" title="Toggle Voice Output" class="glass w-9 h-9 rounded-full flex items-center justify-center text-[#f5f1c6] hover:bg-white/15 transition">
+        <i data-lucide="volume-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Editorial Overlay (Buddy Mode) -->
+  <div id="buddy-hero-overlay" class="fixed inset-x-6 bottom-36 sm:bottom-32 z-20 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pointer-events-none">
+    <div class="max-w-sm">
+      <span class="inline-block px-3 py-1 rounded-full bg-[#e90c0c] border border-[#002e62]/20 text-[10px] font-bold uppercase tracking-wider text-[#f5f1c6] mb-2">
+        Your Voice Study Companion
+      </span>
+      <h1 class="text-2xl sm:text-4xl font-extrabold uppercase leading-[0.95] tracking-tight text-[#002e62]">
+        Studying Just Got A Little Easier.
+      </h1>
+    </div>
+    <div class="max-w-xs sm:text-right pointer-events-auto">
+      <p class="text-xs sm:text-sm font-medium text-[#002e62]/90 leading-snug mb-2.5">
+        Ask Study Buddy any math, science, or history question by voice, or explore the 3D Heart &amp; Solar System!
+      </p>
+      <button id="meet-buddy-btn" class="px-4 py-2 rounded-full bg-[#002e62] text-[#f5f1c6] text-xs font-bold uppercase tracking-wide shadow-lg hover:bg-[#e90c0c] transition">
+        Meet Study Buddy
+      </button>
+    </div>
+  </div>
+
+  <!-- Webcam Hand Gesture PIP -->
+  <div id="gesture-pip" class="fixed top-20 right-4 z-30 glass-strong rounded-2xl p-2 w-48 hidden shadow-2xl">
+    <div class="flex items-center justify-between mb-1.5 px-1">
+      <span class="text-[11px] font-semibold text-[#d0f601] flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Hand Tracking
+      </span>
+      <button id="gesture-close-btn" class="text-slate-300 hover:text-white"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+    </div>
+    <div class="relative rounded-xl overflow-hidden bg-slate-950 aspect-video">
+      <video id="webcam-video" class="w-full h-full object-cover -scale-x-100" playsinline muted></video>
+      <canvas id="hand-overlay" class="absolute inset-0 w-full h-full -scale-x-100"></canvas>
+    </div>
+    <div id="gesture-status" class="mt-1.5 text-[10px] font-semibold text-[#d0f601] px-1 leading-tight">Spread: Zoom In · Pinch: Zoom Out</div>
+    <div class="mt-1 text-[9px] text-[#f5f1c6]/80 px-1 leading-snug">
+      • <b>Spread fingers</b>: Zoom in (auto voice)<br/>
+      • <b>Pinch closed</b>: Zoom out<br/>
+      • <b>Move palm</b>: Rotate 3D<br/>
+      • <b>Point index</b>: Next item
+    </div>
+  </div>
+
+  <!-- Left Explorer Panel (Biology Heart & Solar System) -->
+  <aside id="topic-panel" class="fixed top-20 left-4 z-20 w-72 sm:w-80 max-h-[calc(100vh-13rem)] overflow-y-auto glass-strong rounded-2xl p-4 hidden shadow-2xl">
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <div>
+        <div id="panel-category" class="text-[10px] uppercase tracking-wider font-bold text-[#d0f601]">Explorer</div>
+        <h2 id="panel-title" class="text-lg font-bold text-[#f5f1c6] leading-snug">Select a Topic</h2>
+      </div>
+      <button id="panel-speak-btn" title="Explain with Voice" class="shrink-0 w-8 h-8 rounded-full bg-[#d0f601] text-[#002e62] flex items-center justify-center hover:bg-white transition">
+        <i data-lucide="volume-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <p id="panel-desc" class="text-xs sm:text-sm text-[#f5f1c6]/90 leading-relaxed mb-3"></p>
+    <div id="panel-items" class="flex flex-wrap gap-1.5 mb-3"></div>
+    <div id="panel-details" class="space-y-2 border-t border-white/15 pt-3 text-xs"></div>
+  </aside>
+
+  <!-- Bottom Voice Companion Dock -->
+  <footer class="fixed bottom-3 left-3 right-3 z-30 flex flex-col items-center gap-2 pointer-events-none">
+    <div class="glass-strong rounded-2xl px-4 py-2.5 max-w-2xl w-full pointer-events-auto shadow-2xl">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex items-end gap-0.5 h-4 shrink-0">
+            <span class="eq-bar w-1 h-1.5 bg-[#d0f601] rounded-full"></span>
+            <span class="eq-bar w-1 h-3 bg-[#e90c0c] rounded-full"></span>
+            <span class="eq-bar w-1 h-2 bg-[#f5f1c6] rounded-full"></span>
+            <span class="eq-bar w-1 h-3.5 bg-[#d0f601] rounded-full"></span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span id="voice-speaker-label" class="text-[10px] font-bold uppercase tracking-wider text-[#d0f601]">Study Buddy · Ready</span>
+              <a id="voice-source-link" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-[10px] text-sky-300 underline hover:text-sky-200">Source</a>
+            </div>
+            <div id="voice-caption-text" class="text-xs sm:text-sm text-[#f5f1c6] leading-snug max-h-24 overflow-y-auto pr-1">
+              Hey! Tap the mic and ask me any math, science, or history question—or explore the Academic 3D Heart &amp; Solar System!
+            </div>
+          </div>
+        </div>
+        <button id="stop-speech-btn" class="hidden shrink-0 px-2.5 py-1 rounded-full bg-[#e90c0c] text-[#f5f1c6] text-[11px] font-semibold">Stop</button>
+      </div>
+
+      <div class="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5">
+        <span class="text-[10px] text-[#f5f1c6]/70 shrink-0">Try asking:</span>
+        <button class="quick-voice-btn shrink-0 text-[11px] px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[#f5f1c6] transition" data-prompt="What is 2 + 2?">"What is 2 + 2?"</button>
+        <button class="quick-voice-btn shrink-0 text-[11px] px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[#f5f1c6] transition" data-prompt="Explain how the human heart works">"How does the heart work?"</button>
+        <button class="quick-voice-btn shrink-0 text-[11px] px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[#f5f1c6] transition" data-prompt="Go further in detail">"Go further in detail"</button>
+        <button class="quick-voice-btn shrink-0 text-[11px] px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[#f5f1c6] transition" data-prompt="Open Solar System">"Open Solar System"</button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <div class="relative">
+        <div id="mic-pulse" class="hidden absolute inset-0 rounded-full bg-[#d0f601] listening-ring"></div>
+        <button id="mic-btn" class="relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#e90c0c] text-[#f5f1c6] hover:bg-[#002e62] font-bold text-sm shadow-xl transition-all active:scale-95">
+          <i data-lucide="mic" class="w-4 h-4"></i>
+          <span id="mic-label">Tap to Speak</span>
+        </button>
+      </div>
+      <button id="fallback-kbd-btn" title="Mic unavailable? Type your question" class="glass w-10 h-10 rounded-full flex items-center justify-center text-[#f5f1c6] hover:bg-white/15 transition">
+        <i data-lucide="keyboard" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <form id="fallback-form" class="hidden glass-strong rounded-full px-3 py-1.5 flex items-center gap-2 w-full max-w-md pointer-events-auto shadow-xl">
+      <input id="fallback-input" type="text" placeholder="Ask any study question or 'go further in detail'..." class="bg-transparent text-xs sm:text-sm text-[#f5f1c6] placeholder-slate-400 focus:outline-none flex-1 px-2" />
+      <button type="submit" class="px-3.5 py-1 rounded-full bg-[#d0f601] text-[#002e62] text-xs font-bold hover:bg-white transition">Ask</button>
+    </form>
+  </footer>
+
+  <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 glass-strong px-4 py-2 rounded-full text-xs text-[#d0f601] shadow-xl hidden"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/explorers3d.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/gestures.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
